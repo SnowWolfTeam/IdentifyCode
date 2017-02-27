@@ -1,5 +1,5 @@
 {
-  "name":             "mastertang/identifyCode",
+  "name":             "mastertang/identifycode",
   "description": "获取手机验证码，验证验证码",
   "keywords":         ["IdentifyCode","identify","phone","code" ,"PHP" ,"php" ],
   "time":             "2017-2-20",
