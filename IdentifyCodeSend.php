@@ -15,42 +15,36 @@ class IdentifyCodeSend extends IdentifyCodeBase
 
     public function checkCodeTimeOut($lastStampe, $timeInterval)
     {
-        if ($this->execuResult) {
-            try {
-                $this->paramsCheck($lastStampe, $timeInterval);
-                $result = $this->checkGetCodeTimeInterval($lastStampe, $timeInterval);
-                if ($result)
-                    return true;
-                else
-                    throw new IdentifyCodeException('获取验证码不能过于频繁', self::IDENTIFY_CODE_TIMEOUT);
-            } catch (\Exception $e) {
-                $this->exceptionCode = $e->getCode();
-                $this->exceptionMsg = $e->getMessage();
-                $this->execuResult = false;
-                return $this;
-            }
-        } else
-            return $this;
+        try {
+            $this->paramsCheck($lastStampe, $timeInterval);
+            $result = $this->checkGetCodeTimeInterval($lastStampe, $timeInterval);
+            if ($result)
+                return true;
+            else
+                throw new IdentifyCodeException('获取验证码不能过于频繁', self::IDENTIFY_CODE_TIMEOUT);
+        } catch (\Exception $e) {
+            $this->exceptionCode = $e->getCode();
+            $this->exceptionMsg = $e->getMessage();
+            $this->execuResult = false;
+            return false;
+        }
     }
 
     public function checkErrorRepeatTime($lastStampe, $timeInterval)
     {
-        if ($this->execuResult) {
-            try {
-                $this->paramsCheck($lastStampe, $timeInterval);
-                $result = $this->checkCodeErrorRepeatTime($lastStampe, $timeInterval);
-                if ($result)
-                    return true;
-                else
-                    throw new IdentifyCodeException('错误码错误次数限制还没恢复', self::IDENTIFY_CODE_ERROR_NOT_REPEAT);
-            } catch (\Exception $e) {
-                $this->exceptionCode = $e->getCode();
-                $this->exceptionMsg = $e->getMessage();
-                $this->execuResult = false;
-                return $this;
-            }
-        } else
-            return $this;
+        try {
+            $this->paramsCheck($lastStampe, $timeInterval);
+            $result = $this->checkCodeErrorRepeatTime($lastStampe, $timeInterval);
+            if ($result)
+                return true;
+            else
+                throw new IdentifyCodeException('错误码错误次数限制还没恢复', self::IDENTIFY_CODE_ERROR_NOT_REPEAT);
+        } catch (\Exception $e) {
+            $this->exceptionCode = $e->getCode();
+            $this->exceptionMsg = $e->getMessage();
+            $this->execuResult = false;
+            return false;
+        }
     }
 
     public function checkIdentifyCode($realCode, $getCode)
