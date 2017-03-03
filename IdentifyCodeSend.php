@@ -20,7 +20,7 @@ class IdentifyCodeSend extends IdentifyCodeBase
                 $this->paramsCheck($lastStampe, $timeInterval);
                 $result = $this->checkGetCodeTimeInterval($lastStampe, $timeInterval);
                 if ($result)
-                    return $this;
+                    return true;
                 else
                     throw new IdentifyCodeException('获取验证码不能过于频繁', self::IDENTIFY_CODE_TIMEOUT);
             } catch (\Exception $e) {
@@ -38,10 +38,9 @@ class IdentifyCodeSend extends IdentifyCodeBase
         if ($this->execuResult) {
             try {
                 $this->paramsCheck($lastStampe, $timeInterval);
-                echo $lastStampe;
                 $result = $this->checkCodeErrorRepeatTime($lastStampe, $timeInterval);
                 if ($result)
-                    return $this;
+                    return true;
                 else
                     throw new IdentifyCodeException('错误码错误次数限制还没恢复', self::IDENTIFY_CODE_ERROR_NOT_REPEAT);
             } catch (\Exception $e) {
