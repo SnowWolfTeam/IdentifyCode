@@ -6,45 +6,22 @@ use IdentifyCode\Exception\IdentifyCodeException;
 
 class IdentifyCodeSend extends IdentifyCodeBase
 {
-    const IDENTIFY_CODE_TIMEOUT = 0x1000;
-    const IDENTIFY_CODE_ERROR_NOT_REPEAT = 0x1001;
-    const CUSTOM_FUNC_ERROR = 0x1002;
-    public $exceptionCode = -1;
-    public $exceptionMsg = '';
-    public $execuResult = true;
+    const CODE_TIME_OUT = -1;
+    const CODE_NOT_TIME_OUT = -2;
+    const ErrorRepeatTime_NOT_PASS = -3;
+    const CODE_ERROR = -4;
+    const SEND_FAILED = -5;
 
     public function checkCodeTimeOut($lastStampe, $timeInterval)
     {
-        try {
-            $this->paramsCheck($lastStampe, $timeInterval);
-            $result = $this->checkGetCodeTimeInterval($lastStampe, $timeInterval);
-            if ($result)
-                return true;
-            else
-                throw new IdentifyCodeException('获取验证码不能过于频繁', self::IDENTIFY_CODE_TIMEOUT);
-        } catch (\Exception $e) {
-            $this->exceptionCode = $e->getCode();
-            $this->exceptionMsg = $e->getMessage();
-            $this->execuResult = false;
-            return false;
-        }
+        $this->paramsCheck($lastStampe, $timeInterval);
+        return $this->checkGetCodeTimeInterval($lastStampe, $timeInterval);
     }
 
     public function checkErrorRepeatTime($lastStampe, $timeInterval)
     {
-        try {
-            $this->paramsCheck($lastStampe, $timeInterval);
-            $result = $this->checkCodeErrorRepeatTime($lastStampe, $timeInterval);
-            if ($result)
-                return true;
-            else
-                throw new IdentifyCodeException('错误码错误次数限制还没恢复', self::IDENTIFY_CODE_ERROR_NOT_REPEAT);
-        } catch (\Exception $e) {
-            $this->exceptionCode = $e->getCode();
-            $this->exceptionMsg = $e->getMessage();
-            $this->execuResult = false;
-            return false;
-        }
+        $this->paramsCheck($lastStampe, $timeInterval);
+        return $this->checkCodeErrorRepeatTime($lastStampe, $timeInterval);
     }
 
     public function checkIdentifyCode($realCode, $getCode)
@@ -54,15 +31,9 @@ class IdentifyCodeSend extends IdentifyCodeBase
 
     public function send($function, $data)
     {
-        if ($this->execuResult) {
-            if ($function instanceof \Closure) {
-                $data = $function($data);
-                return $data;
-            } else
-                $this->exceptionCode = self::CUSTOM_FUNC_ERROR;
-            $this->exceptionMsg = '发送验证码函数必须以参数传进来';
-            $this->execuResult = false;
-            return false;
+        if ($function instanceof \Closure) {
+            $data = $function($data);
+            return $data;
         } else
             return false;
     }
@@ -70,16 +41,47 @@ class IdentifyCodeSend extends IdentifyCodeBase
     private function paramsCheck(&$stampe, $timeInterval)
     {
         if ($stampe === NULL || $timeInterval === NULL || $timeInterval == '')
-            throw new IdentifyCodeException('参数为空', IdentifyCodeException::PARAMS_NULL);
+            throw new IdentifyCodeException('参数为空');
         $stampe = empty($stampe) ? 0 : $stampe;
         $stampe = is_string($stampe) ? strtotime($stampe) : $stampe;
         if ($stampe === false)
-            throw new IdentifyCodeException('日期格式错误', IdentifyCodeException::LAST_STAMPE_TYPE_ERROR);
+            throw new IdentifyCodeException('日期格式错误');
         if ($stampe < 0)
-            throw new IdentifyCodeException('日期时间戳小于0', IdentifyCodeException::LAST_STAPME_BIGGER_EQUEAL_0);
+            throw new IdentifyCodeException('日期时间戳小于0');
         if (!is_int($timeInterval))
-            throw new IdentifyCodeException('时间间隔为int型', IdentifyCodeException::TIME_INTERVAL_INT);
-        if ($stampe < 0)
-            throw new IdentifyCodeException('', IdentifyCodeException::TIME_INTERVAL_BIGGER_EQUEAL_0);
+            throw new IdentifyCodeException('时间间隔为int型');
+    }
+
+    /**
+     * 发送验证码
+     */
+    public function checkAndSendCode($lastStampe, $timeInterval, $function, $data)
+    {
+        if (!$this->checkCodeTimeOut($lastStampe, $timeInterval))
+            return self::CODE_NOT_TIME_OUT;
+        if (!$this->checkErrorRepeatTime($lastStampe, $timeInterval)) {
+            return self::ErrorRepeatTime_NOT_PASS;
+        }
+        $result = $this->send($function, $data);
+        if (!$result)
+            return self::SEND_FAILED;
+        else
+            return $result;
+    }
+
+    /**
+     * 验证验证码
+     */
+    public function checkGetCode($lastStampe, $timeInterval, $realCode, $getCode)
+    {
+        if ($this->checkCodeTimeOut($lastStampe, $timeInterval))
+            return self::CODE_TIME_OUT;
+        if (!$this->checkErrorRepeatTime($lastStampe, $timeInterval)) {
+            return self::ErrorRepeatTime_NOT_PASS;
+        }
+        if ($this->checkIdentifyCode($realCode, $getCode))
+            return true;
+        else
+            return self::CODE_ERROR;
     }
 }
